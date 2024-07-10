@@ -2,9 +2,37 @@ import express from "express"
 import dotenv  from "dotenv"
  
 dotenv.config ()
+import { getHealth } from "./controllers/health.js"
+import { postStudent,
+         getStudents ,
+         getStudentId,
+         putStudentId,
+         deleteStudentId
+        } from "./controllers/student.js"
+
+ import { handelPageNotFound } from "./controllers/error.js"
+import mongoose from "mongoose"
+
+
 
 const app= express()
 app.use(express.json())
+
+
+const dbConnection = async ()  =>{
+    const conn =  await mongoose.connect(process.env.MONGODB_URL)
+
+    if (conn){
+        console.log(`MongoDB is Connected 📦`)
+    }
+
+    else{
+        console.log(`MongoDB is  Not Connected ❌`)
+    }
+}
+
+     dbConnection();
+
 
 const students=[{
     "id":1,
@@ -19,158 +47,19 @@ const students=[{
     "gender": "female"
 },] ;
 
-app.get("/students",(req,res)=>{
-    res.json({
-        success:true,
-        data:students,
-        message:"successfuly fetch all students",
-        
-    }
-        
-    )
+app.get("/health", getHealth)
 
-})
+app.post("/student", postStudent)
 
-app.post("/student",(req,res)=>{
+app.get("/students", getStudents)
 
-    const {name,age,gender}=req.body
-    const RandomId = Math.round(Math.random()*1000)
+app.get("/student/:id",getStudentId)
 
-    const newStudent={
-        id:RandomId,
-        name:name,
-        age:age,
-        gender:gender,
+app.put("/student/:id",putStudentId)
 
-    }
+app.delete("/student/:id",deleteStudentId)
 
-    if(!name){
-        return  res.json({
-            success:false,
-            data:null,
-            message:"Name is required"
-        })
-    }
-
-    if(!age){
-        return  res.json({
-            success:false,
-            data:null,
-            message:"Age is required"
-        })
-    }
-
-    if(!gender){
-      return  res.json({
-            success:false,
-            data:null,
-            message:"Gender is required"
-        })
-    }
-    students.push(newStudent)
-
-    res.json({
-        success :true,
-        data:newStudent,
-        message:"new student added succesfully"
-    })
-})
-
-app.get("/student/:id",(req,res)=>{
-
-    const {id }=req.params;
-
-    const student = students.find((p)=>{
-     
-        if(p.id==id){
-            return true
-        }
-        else{
-            return false
-        }   
-    })
-    res.json({
-        success: student ?true : false,
-        data:student ||null,
-        message: student? "data fetch succsseffuly" : "student not found"
-    })
-})
-
-app.put("/student/:id",(req,res)=>{
-
-    const {name,age,gender} = req.body
-    const {id} =req.params
-
-    let index =-1
-
-    students.forEach((student,i)=>{
-
-        if(student.id==id){
-            index=i
-        }
-    })
-
-    const newObj ={
-        id :id,
-        name : name,
-        age : age,
-        gender:gender
-    }
-    if(index==-1){
-      return  res.json({
-             status:false,
-        data:null,
-        message:"data is not updated "
-        })
-    }
-    else{
-
-        students [index] = newObj
-
-    res.json({
-        status:true,
-        data:newObj,
-        message:"data updated successfully"
-    })
-
-}
-})
-
-
-app.delete("/student/:id",(req,res)=>{
-    const {id} =req.params
-
-    let index = -1
-
-    students.forEach((student,i)=>{
-        if (student.id==id){
-           index = i
-        }
-    })
-
-    if(index==-1){
-        return res.json({
-            success:false,
-            message:`students not found for id ${id}`
-        })
-    }
-    
-    students.splice(index,1)
-
-    res.json({
-        success:true,
-        data:null,
-        message :`students is successfully deleted`
-    })
-
-
-})
-
-app.use("*",(req,res)=>{
-    res.send(`<div>
-        <h1 style="text-align:center";>404 Not Found</h1>
-        </div>`)
-})
+app.use("*",handelPageNotFound)
 
 const PORT=process.env.PORT
 
